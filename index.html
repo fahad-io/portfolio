@@ -88,19 +88,20 @@
     display:flex;align-items:center;gap:10px;
     text-decoration:none;
   }
-  .logo-mark{
-    width:34px;height:34px;
-    border-radius:8px;
-    background:linear-gradient(135deg,var(--accent),var(--accent-2));
-    color:#04140a;
-    display:flex;align-items:center;justify-content:center;
-    font-family:'JetBrains Mono',monospace;
-    font-weight:700;font-size:14px;
-    box-shadow:0 0 18px rgba(57,255,20,0.4);
+  .logo-dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 14px var(--accent),0 0 28px rgba(57,255,20,0.4);
+    animation:pulse 2s ease-in-out infinite;
+    flex-shrink:0;
   }
-  .logo-name{display:flex;flex-direction:column;line-height:1.1}
-  .logo-name b{color:var(--text);font-weight:600;font-size:15px;letter-spacing:0.3px}
-  .logo-name small{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px}
+  @keyframes pulse{
+    0%,100%{transform:scale(1);opacity:1}
+    50%{transform:scale(1.25);opacity:.7}
+  }
+  .logo-name{display:flex;flex-direction:column;line-height:1.15}
+  .logo-name b{color:var(--text);font-weight:700;font-size:17px;letter-spacing:0.2px}
+  .logo-name small{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.6px}
   .logo .blink{animation:blink 1s steps(1,end) infinite;color:var(--accent-2)}
   @keyframes blink{50%{opacity:0}}
   .nav-links{display:flex;gap:34px;list-style:none}
@@ -551,6 +552,8 @@
   }
   .form-group input::placeholder,.form-group textarea::placeholder{color:var(--muted)}
   .form-group textarea{min-height:140px;line-height:1.6}
+  .form-group input,.form-group textarea{cursor:text}
+  .form-group input:hover,.form-group textarea:hover{border-color:rgba(57,255,20,0.25)}
 
   .form-submit{
     width:100%;
@@ -636,9 +639,9 @@
     section{padding:90px 6% 50px}
     nav{padding:14px 5%}
     .nav-links{display:none}
-    .logo-name b{font-size:13px}
+    .logo-name b{font-size:15px}
     .logo-name small{font-size:9px}
-    .logo-mark{width:30px;height:30px;font-size:12px}
+    .logo-dot{width:8px;height:8px}
     .about-grid{grid-template-columns:1fr;gap:36px}
     .hero-stats{gap:30px}
     .stat-num{font-size:28px}
@@ -665,7 +668,7 @@
 
 <nav id="navbar">
   <a class="logo" href="#hero">
-    <span class="logo-mark">MF</span>
+    <span class="logo-dot"></span>
     <span class="logo-name">
       <b>Muhammad Fahad</b>
       <small>FULL STACK DEV<span class="blink">_</span></small>
@@ -1095,9 +1098,9 @@
      4. From Account → API Keys → copy your PUBLIC KEY
      5. Paste them into the three constants below.
      ========================================================= */
-  const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";      // e.g. "aB1cD2eF3gH4iJ5kL"
-  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";      // e.g. "service_xxxxxxx"
-  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";    // e.g. "template_xxxxxxx"
+  const EMAILJS_PUBLIC_KEY  = "v0t80n-LFb-c9Oamt";
+  const EMAILJS_SERVICE_ID  = "service_h7cfct7";
+  const EMAILJS_TEMPLATE_ID = "template_fxakozp";
 
   if (window.emailjs && EMAILJS_PUBLIC_KEY && !EMAILJS_PUBLIC_KEY.startsWith("YOUR_")) {
     emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
@@ -1469,19 +1472,103 @@
     });
   });
 
-  // ----- Smooth-scroll for nav anchors (in addition to CSS) -----
-  document.querySelectorAll('a[href^="#"]').forEach(a=>{
-    a.addEventListener('click', e=>{
-      const id = a.getAttribute('href');
-      if(id.length > 1){
-        const t = document.querySelector(id);
-        if(t){
-          e.preventDefault();
-          window.scrollTo({top: t.offsetTop - 60, behavior:'smooth'});
-        }
+  // ----- Smooth-scroll for ALL in-page anchors (Hire Me, Get In Touch, nav links, etc.) -----
+  document.addEventListener('click', e=>{
+    const a = e.target.closest('a[href^="#"]');
+    if(!a) return;
+    const id = a.getAttribute('href');
+    if(!id || id.length < 2) return;
+    const t = document.querySelector(id);
+    if(!t) return;
+    e.preventDefault();
+    const top = t.getBoundingClientRect().top + window.pageYOffset - 70;
+    window.scrollTo({top, behavior:'smooth'});
+  });
+
+  // ============================================================
+  // EmailJS contact-form submission
+  // ============================================================
+  const form     = document.getElementById('contactForm');
+  const submitEl = document.getElementById('cf-submit');
+  const msgEl    = document.getElementById('cf-msg');
+
+  function showMsg(type, text){
+    msgEl.className = 'form-msg ' + type;
+    msgEl.innerHTML =
+      (type === 'success'
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+      ) + '<span>' + text + '</span>';
+    msgEl.style.display = 'flex';
+  }
+  function hideMsg(){ msgEl.style.display = 'none'; msgEl.className = 'form-msg'; }
+
+  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  if(form){
+    form.addEventListener('submit', async e=>{
+      e.preventDefault();
+      hideMsg();
+
+      const name    = form['from_name'].value.trim();
+      const email   = form['from_email'].value.trim();
+      const subject = form['subject'].value.trim() || 'New message from portfolio';
+      const message = form['message'].value.trim();
+
+      // ----- client-side validation -----
+      if(!name)               return showMsg('error', 'Please enter your name.');
+      if(!email)              return showMsg('error', 'Please enter your email.');
+      if(!isValidEmail(email))return showMsg('error', 'That email address doesn’t look right.');
+      if(!message || message.length < 10)
+                              return showMsg('error', 'Please write a message of at least 10 characters.');
+
+      submitEl.classList.add('loading');
+      submitEl.disabled = true;
+
+      // ----- check if EmailJS is configured -----
+      const configured =
+        window.emailjs &&
+        EMAILJS_PUBLIC_KEY  && !EMAILJS_PUBLIC_KEY.startsWith('YOUR_') &&
+        EMAILJS_SERVICE_ID  && !EMAILJS_SERVICE_ID.startsWith('YOUR_') &&
+        EMAILJS_TEMPLATE_ID && !EMAILJS_TEMPLATE_ID.startsWith('YOUR_');
+
+      if(!configured){
+        // Fallback: open user's mail client with prefilled body
+        submitEl.classList.remove('loading');
+        submitEl.disabled = false;
+        const body =
+          'Name: ' + name + '\n' +
+          'Email: ' + email + '\n\n' +
+          message;
+        window.location.href =
+          'mailto:chfahad838@gmail.com' +
+          '?subject=' + encodeURIComponent(subject) +
+          '&body='    + encodeURIComponent(body);
+        showMsg('success', 'EmailJS not yet configured — opened your mail app instead. (See <code>EMAILJS_*</code> constants in the source.)');
+        return;
+      }
+
+      try{
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          from_name:  name,
+          from_email: email,
+          subject:    subject,
+          message:    message,
+          to_name:    'Muhammad Fahad',
+          reply_to:   email
+        });
+        form.reset();
+        showMsg('success', 'Message sent! I’ll get back to you shortly. ✨');
+      } catch(err){
+        console.error('EmailJS error:', err);
+        const txt = (err && (err.text || err.message)) || 'Something went wrong. Please email me directly at chfahad838@gmail.com.';
+        showMsg('error', txt);
+      } finally {
+        submitEl.classList.remove('loading');
+        submitEl.disabled = false;
       }
     });
-  });
+  }
 })();
 </script>
 </body>
